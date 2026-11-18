@@ -1,10 +1,11 @@
 export function Template() {
   return (
-    <section className="template" aria-labelledby="template-h">
-      <div className="section-header">
+    <details className="template">
+      <summary className="section-header">
         <span className="section-num">1</span>
-        <h2 id="template-h">How every description is built</h2>
-      </div>
+        <h2>How every description is built</h2>
+        <span className="summary-hint">Show</span>
+      </summary>
       <div className="template-grid">
         <ol className="steps">
           <li>
@@ -60,6 +61,6 @@ export function Template() {
           </div>
         </div>
       </div>
-    </section>
+    </details>
   );
 }

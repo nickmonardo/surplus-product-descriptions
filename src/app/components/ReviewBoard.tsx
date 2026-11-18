@@ -1,11 +1,12 @@
 "use client";
 
-import { useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { sanitizeCopyHtml, stripHtml } from "@/lib/copy/rules";
 import type { Batch, BatchProduct, Decision } from "@/lib/types";
 import { Hero } from "./Hero";
 
 type Mode = "view" | "edit" | "reject";
+type Tab = "description" | "faq" | "competitors";
 type Filter = "all" | "pending" | "approved" | "rejected";
 type Copy = { description_html: string; meta_title: string; meta_description: string; faq_html: string };
 
@@ -47,7 +48,6 @@ function Rivals({ product, copy }: { product: BatchProduct; copy: Copy }) {
   const suggested = stripHtml(copy.description_html);
   return (
     <div className="rivals">
-      <div className="pane-title">How others describe it</div>
       <p className="muted" style={{ fontSize: 13 }}>
         Read from competitors&apos; product pages when this batch was drafted. These are their closest equivalents, not the
         same model.
@@ -124,14 +124,27 @@ function Card({
   onDecision: (sku: string, d: Decision | null) => void;
 }) {
   const [mode, setMode] = useState<Mode>("view");
+  const [tab, setTab] = useState<Tab>("description");
   const [saving, setSaving] = useState(false);
   const [error, setError] = useState("");
   const [title, setTitle] = useState("");
   const [meta, setMeta] = useState("");
   const [reason, setReason] = useState("");
   const [wc, setWc] = useState<number | null>(null);
-  const descRef = useRef<HTMLDivElement>(null);
-  const faqRef = useRef<HTMLDivElement>(null);
+  // While editing, keystrokes go to these refs (no re-render); switching tabs copies them into
+  // state so the reopened tab shows the edited text instead of the original.
+  const descDraft = useRef<string | null>(null);
+  const faqDraft = useRef<string | null>(null);
+  const [descEdit, setDescEdit] = useState<string | null>(null);
+  const [faqEdit, setFaqEdit] = useState<string | null>(null);
+
+  function switchTab(next: Tab) {
+    if (mode === "edit") {
+      setDescEdit(descDraft.current);
+      setFaqEdit(faqDraft.current);
+    }
+    setTab(next);
+  }
 
   const status = decision?.status ?? "pending";
   const copy: Copy = decision?.description_html
@@ -140,6 +153,7 @@ function Card({
   const descHtml = useMemo(() => sanitizeCopyHtml(copy.description_html), [copy.description_html]);
   const faqHtml = useMemo(() => sanitizeCopyHtml(copy.faq_html ?? ""), [copy.faq_html]);
   const sugWords = wc ?? words(stripHtml(descHtml));
+  const editing = mode === "edit";
 
   async function save(action: "approve" | "reject" | "undo", extra: { copy?: Copy; reason?: string } = {}) {
     setSaving(true);
@@ -152,9 +166,11 @@ function Card({
       });
       const body = await res.json().catch(() => ({}));
       if (!res.ok) throw new Error(body.error ?? `HTTP ${res.status}`);
-      onDecision(product.sku, body.decision ?? null);
       setMode("view");
       setWc(null);
+      descDraft.current = null;
+      faqDraft.current = null;
+      onDecision(product.sku, body.decision ?? null);
     } catch (e) {
       setError(`Couldn't save: ${e instanceof Error ? e.message : "try again"}`);
     } finally {
@@ -165,15 +181,25 @@ function Card({
   function startEdit() {
     setTitle(copy.meta_title);
     setMeta(copy.meta_description);
+    descDraft.current = descHtml;
+    faqDraft.current = faqHtml;
+    setDescEdit(descHtml);
+    setFaqEdit(faqHtml);
     setMode("edit");
-    setTimeout(() => descRef.current?.focus(), 0);
+  }
+
+  function cancelEdit() {
+    setMode("view");
+    setWc(null);
+    descDraft.current = null;
+    faqDraft.current = null;
   }
 
   function saveEdit() {
     save("approve", {
       copy: {
-        description_html: sanitizeCopyHtml(descRef.current?.innerHTML ?? copy.description_html),
-        faq_html: sanitizeCopyHtml(faqRef.current?.innerHTML ?? copy.faq_html ?? ""),
+        description_html: sanitizeCopyHtml(descDraft.current ?? copy.description_html),
+        faq_html: sanitizeCopyHtml(faqDraft.current ?? copy.faq_html ?? ""),
         meta_title: title.trim(),
         meta_description: meta.trim(),
       },
@@ -181,10 +207,62 @@ function Card({
   }
 
   const statusLabel = { pending: "To review", approved: decision?.edited ? "Approved with edits" : "Approved", rejected: "Rejected" }[status];
-  const editing = mode === "edit";
   const when = decision?.at
     ? new Date(decision.at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
     : "";
+  const tabs: { id: Tab; label: string }[] = [
+    { id: "description", label: "Description & Google preview" },
+    ...(faqHtml ? [{ id: "faq" as Tab, label: `FAQ${product.faqGaps.length && status === "pending" ? " · needs you" : ""}` }] : []),
+    ...(product.competitors.length && product.primary ? [{ id: "competitors" as Tab, label: "Competitors" }] : []),
+  ];
+
+  const actions = (
+    <div className="actions">
+      {editing ? (
+        <>
+          <button className="btn approve" disabled={saving} onClick={saveEdit}>
+            Save and approve
+          </button>
+          <button className="btn link" onClick={cancelEdit}>
+            Cancel
+          </button>
+          <span className="decision">Click into the text to change it. Edits in every tab are kept until you save.</span>
+        </>
+      ) : mode === "reject" ? (
+        <span className="decision">Rejecting sends this product back for a new draft.</span>
+      ) : status === "pending" ? (
+        <>
+          <button className="btn approve" disabled={saving} onClick={() => save("approve")}>
+            Approve
+          </button>
+          <button className="btn" disabled={saving} onClick={startEdit}>
+            Edit
+          </button>
+          <button className="btn reject" disabled={saving} onClick={() => setMode("reject")}>
+            Reject
+          </button>
+        </>
+      ) : (
+        <>
+          <span className="decision">
+            {status === "approved" ? "Approved" : "Rejected"} by {decision?.by}
+            {when ? ` on ${when}` : ""}
+            {when.endsWith(".") ? "" : "."}
+            {status === "approved" ? " Ready to publish to the product page." : ""}
+          </span>
+          {status === "rejected" && decision?.reason ? <span className="reject-reason">“{decision.reason}”</span> : null}
+          <button className="btn link" disabled={saving} onClick={() => save("undo")}>
+            Undo
+          </button>
+        </>
+      )}
+      {error ? (
+        <span className="reject-reason" role="alert">
+          {error}
+        </span>
+      ) : null}
+    </div>
+  );
 
   return (
     <article className="card" data-status={status} id={`card-${product.sku}`}>
@@ -197,7 +275,6 @@ function Card({
               className="product-img"
               src={product.image}
               alt=""
-              loading="lazy"
               onError={(e) => {
                 e.currentTarget.style.display = "none";
               }}
@@ -221,126 +298,7 @@ function Card({
         <span className={`pill ${status}`}>{statusLabel}</span>
       </div>
 
-      {product.primary ? (
-        <div className="kw">
-          <span className="label">Keywords</span>
-          <span className="chip primary" title="Target keyword">
-            {product.primary.keyword} <span className="v">{fmt(product.primary.volume)}/mo</span>
-          </span>
-          {product.secondary.map((k) => (
-            <span className="chip" key={k.keyword}>
-              {k.keyword} <span className="v">{fmt(k.volume)}/mo</span>
-            </span>
-          ))}
-        </div>
-      ) : null}
-
-      <div className="compare">
-        <div className="pane">
-          <div className="pane-title">
-            Current description <span className="wordcount">{words(product.currentText)} words</span>
-          </div>
-          <p className="current-text">{product.currentText || "No description yet."}</p>
-        </div>
-        <div className="pane">
-          <div className="pane-title">
-            {editing ? "Editing suggested description" : status === "pending" ? "Suggested description" : "Approved description"}
-            <span className="wordcount">{sugWords} words</span>
-          </div>
-          <div
-            key={`desc-${mode}-${decision?.at ?? ""}`}
-            className="desc"
-            ref={descRef}
-            contentEditable={editing}
-            suppressContentEditableWarning
-            spellCheck={editing}
-            onInput={(e) => setWc(words(e.currentTarget.textContent ?? ""))}
-            dangerouslySetInnerHTML={{ __html: descHtml }}
-          />
-          {faqHtml ? (
-            <div className="faq">
-              <div className="pane-title">
-                Product FAQ <span className="wordcount">added below the description</span>
-              </div>
-              <div
-                key={`faq-${mode}-${decision?.at ?? ""}`}
-                className="desc faq-body"
-                ref={faqRef}
-                contentEditable={editing}
-                suppressContentEditableWarning
-                spellCheck={editing}
-                dangerouslySetInnerHTML={{ __html: faqHtml }}
-              />
-              {product.faqGaps.length && status === "pending" ? (
-                <div className="note">
-                  <b>Needs from you:</b>{" "}shoppers also ask these, but the product data can&apos;t answer them yet.
-                  <ul className="gaps">
-                    {product.faqGaps.map((g) => (
-                      <li key={g.q}>
-                        <b>{g.q}</b>
-                        <span className="why">{g.why}</span>
-                      </li>
-                    ))}
-                  </ul>
-                </div>
-              ) : null}
-            </div>
-          ) : null}
-          {product.note && status === "pending" ? (
-            <div className="note">
-              <b>Note:</b> {product.note}
-            </div>
-          ) : null}
-          {staff && product.issues.length ? (
-            <div className="issues">
-              <b>Checks still flag (TIA only):</b>
-              <ul>
-                {product.issues.map((i) => (
-                  <li key={i}>{i}</li>
-                ))}
-              </ul>
-            </div>
-          ) : null}
-        </div>
-      </div>
-
-      <Rivals product={product} copy={copy} />
-
-      <div className="serp">
-        {editing ? (
-          <>
-            <div className="pane-title">Search listing</div>
-            <div className="fields">
-              <div className="field">
-                <label htmlFor={`title-${product.sku}`}>
-                  Meta title <span className={countClass(title.length, 1, LIMITS.title)}>{title.length} / {LIMITS.title}</span>
-                </label>
-                <input id={`title-${product.sku}`} value={title} onChange={(e) => setTitle(e.target.value)} />
-              </div>
-              <div className="field">
-                <label htmlFor={`meta-${product.sku}`}>
-                  Meta description{" "}
-                  <span className={countClass(meta.length, LIMITS.metaMin, LIMITS.metaMax)}>
-                    {meta.length} / {LIMITS.metaMin}–{LIMITS.metaMax}
-                  </span>
-                </label>
-                <textarea id={`meta-${product.sku}`} rows={3} value={meta} onChange={(e) => setMeta(e.target.value)} />
-              </div>
-            </div>
-            <Serp url={product.url} title={title} meta={meta} />
-          </>
-        ) : (
-          <>
-            <div className="pane-title">
-              How it looks in Google{" "}
-              <span className="wordcount">
-                title {copy.meta_title.length}/{LIMITS.title} · description {copy.meta_description.length} characters
-              </span>
-            </div>
-            <Serp url={product.url} title={copy.meta_title} meta={copy.meta_description} />
-          </>
-        )}
-      </div>
+      {actions}
 
       {mode === "reject" ? (
         <div className="reject-box">
@@ -364,54 +322,158 @@ function Card({
         </div>
       ) : null}
 
-      <div className="actions">
-        {editing ? (
-          <>
-            <button className="btn approve" disabled={saving} onClick={saveEdit}>
-              Save and approve
-            </button>
-            <button className="btn link" onClick={() => { setMode("view"); setWc(null); }}>
-              Cancel
-            </button>
-            <span className="decision">Click into the description or FAQ to change the wording.</span>
-          </>
-        ) : mode === "reject" ? (
-          <span className="decision">Rejecting sends this product back for a new draft.</span>
-        ) : status === "pending" ? (
-          <>
-            <button className="btn approve" disabled={saving} onClick={() => save("approve")}>
-              Approve
-            </button>
-            <button className="btn" disabled={saving} onClick={startEdit}>
-              Edit
-            </button>
-            <button className="btn reject" disabled={saving} onClick={() => setMode("reject")}>
-              Reject
-            </button>
-          </>
-        ) : (
-          <>
-            <span className="decision">
-              {status === "approved" ? "Approved" : "Rejected"} by {decision?.by}
-              {when ? ` on ${when}` : ""}
-              {when.endsWith(".") ? "" : "."}
-              {status === "approved" ? " Ready to publish to the product page." : ""}
-            </span>
-            {status === "rejected" && decision?.reason ? <span className="reject-reason">“{decision.reason}”</span> : null}
-            <button className="btn link" disabled={saving} onClick={() => save("undo")}>
-              Undo
-            </button>
-          </>
-        )}
-        {error ? (
-          <span className="reject-reason" role="alert">
-            {error}
+      {product.primary ? (
+        <div className="kw">
+          <span className="label">Keywords</span>
+          <span className="chip primary" title="Target keyword">
+            {product.primary.keyword} <span className="v">{fmt(product.primary.volume)}/mo</span>
           </span>
+          {product.secondary.map((k) => (
+            <span className="chip" key={k.keyword}>
+              {k.keyword} <span className="v">{fmt(k.volume)}/mo</span>
+            </span>
+          ))}
+        </div>
+      ) : null}
+
+      <div className="card-tabs" role="tablist" aria-label="Product details">
+        {tabs.map((t) => (
+          <button
+            key={t.id}
+            role="tab"
+            id={`tab-${product.sku}-${t.id}`}
+            aria-selected={tab === t.id}
+            aria-controls={`panel-${product.sku}`}
+            className="card-tab"
+            onClick={() => switchTab(t.id)}
+          >
+            {t.label}
+          </button>
+        ))}
+      </div>
+
+      <div role="tabpanel" id={`panel-${product.sku}`} aria-labelledby={`tab-${product.sku}-${tab}`}>
+        {tab === "description" ? (
+          <>
+            <div className="compare">
+              <div className="pane">
+                <div className="pane-title">
+                  Current description <span className="wordcount">{words(product.currentText)} words</span>
+                </div>
+                <p className="current-text">{product.currentText || "No description yet."}</p>
+              </div>
+              <div className="pane suggested">
+                <div className="pane-title">
+                  {editing ? "Editing suggested description" : status === "pending" ? "Suggested description" : "Approved description"}
+                  <span className="wordcount">{sugWords} words</span>
+                </div>
+                <div
+                  key={`desc-${mode}-${decision?.at ?? ""}`}
+                  className="desc"
+                  contentEditable={editing}
+                  suppressContentEditableWarning
+                  spellCheck={editing}
+                  onInput={(e) => {
+                    descDraft.current = e.currentTarget.innerHTML;
+                    setWc(words(e.currentTarget.textContent ?? ""));
+                  }}
+                  dangerouslySetInnerHTML={{ __html: editing ? descEdit ?? descHtml : descHtml }}
+                />
+                {product.note && status === "pending" ? (
+                  <div className="note">
+                    <b>Note:</b>{" "}{product.note}
+                  </div>
+                ) : null}
+                {staff && product.issues.length ? (
+                  <div className="issues">
+                    <b>Checks still flag (TIA only):</b>
+                    <ul>
+                      {product.issues.map((i) => (
+                        <li key={i}>{i}</li>
+                      ))}
+                    </ul>
+                  </div>
+                ) : null}
+              </div>
+            </div>
+            <div className="serp">
+              {editing ? (
+                <>
+                  <div className="pane-title">Search listing</div>
+                  <div className="fields">
+                    <div className="field">
+                      <label htmlFor={`title-${product.sku}`}>
+                        Meta title <span className={countClass(title.length, 1, LIMITS.title)}>{title.length} / {LIMITS.title}</span>
+                      </label>
+                      <input id={`title-${product.sku}`} value={title} onChange={(e) => setTitle(e.target.value)} />
+                    </div>
+                    <div className="field">
+                      <label htmlFor={`meta-${product.sku}`}>
+                        Meta description{" "}
+                        <span className={countClass(meta.length, LIMITS.metaMin, LIMITS.metaMax)}>
+                          {meta.length} / {LIMITS.metaMin}–{LIMITS.metaMax}
+                        </span>
+                      </label>
+                      <textarea id={`meta-${product.sku}`} rows={3} value={meta} onChange={(e) => setMeta(e.target.value)} />
+                    </div>
+                  </div>
+                  <Serp url={product.url} title={title} meta={meta} />
+                </>
+              ) : (
+                <>
+                  <div className="pane-title">
+                    How it looks in Google{" "}
+                    <span className="wordcount">
+                      title {copy.meta_title.length}/{LIMITS.title} · description {copy.meta_description.length} characters
+                    </span>
+                  </div>
+                  <Serp url={product.url} title={copy.meta_title} meta={copy.meta_description} />
+                </>
+              )}
+            </div>
+          </>
         ) : null}
+
+        {tab === "faq" ? (
+          <div className="tab-body">
+            <div className="pane-title">
+              Product FAQ <span className="wordcount">added below the description on the product page</span>
+            </div>
+            <div
+              key={`faq-${mode}-${decision?.at ?? ""}`}
+              className="desc faq-body"
+              contentEditable={editing}
+              suppressContentEditableWarning
+              spellCheck={editing}
+              onInput={(e) => {
+                faqDraft.current = e.currentTarget.innerHTML;
+              }}
+              dangerouslySetInnerHTML={{ __html: editing ? faqEdit ?? faqHtml : faqHtml }}
+            />
+            {product.faqGaps.length && status === "pending" ? (
+              <div className="note">
+                <b>Needs from you:</b>{" "}shoppers also ask these, but the product data can&apos;t answer them yet.
+                <ul className="gaps">
+                  {product.faqGaps.map((g) => (
+                    <li key={g.q}>
+                      <b>{g.q}</b>
+                      <span className="why">{g.why}</span>
+                    </li>
+                  ))}
+                </ul>
+              </div>
+            ) : null}
+          </div>
+        ) : null}
+
+        {tab === "competitors" ? <Rivals product={product} copy={copy} /> : null}
       </div>
     </article>
   );
 }
+
+const isTyping = (el: Element | null) =>
+  !!el && (el.tagName === "INPUT" || el.tagName === "TEXTAREA" || (el as HTMLElement).isContentEditable);
 
 export function ReviewBoard({
   batch,
@@ -428,20 +490,49 @@ export function ReviewBoard({
 }) {
   const [decisions, setDecisions] = useState(initialDecisions);
   const [filter, setFilter] = useState<Filter>("all");
+  const [index, setIndex] = useState(0);
+  const [saved, setSaved] = useState("");
   const statusOf = (sku: string) => decisions[sku]?.status ?? "pending";
   const counts = { all: batch.products.length, pending: 0, approved: 0, rejected: 0 };
   for (const p of batch.products) counts[statusOf(p.sku)]++;
   const thin = batch.products.filter((p) => p.kind === "thin").length;
   const seo = batch.products.length - thin;
   const shown = batch.products.filter((p) => filter === "all" || statusOf(p.sku) === filter);
+  const current = Math.min(index, Math.max(shown.length - 1, 0));
+  const product = shown[current];
 
-  const onDecision = (sku: string, d: Decision | null) =>
+  const go = useCallback((delta: number) => {
+    setSaved("");
+    setIndex((i) => Math.max(0, Math.min(i + delta, shown.length - 1)));
+    window.scrollTo({ top: document.getElementById("review")?.offsetTop ?? 0, behavior: "smooth" });
+  }, [shown.length]);
+
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => {
+      if (isTyping(document.activeElement) || e.metaKey || e.ctrlKey || e.altKey) return;
+      if (e.key === "ArrowRight") go(1);
+      if (e.key === "ArrowLeft") go(-1);
+    };
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [go]);
+
+  const onDecision = (sku: string, d: Decision | null) => {
     setDecisions((prev) => {
       const next = { ...prev };
       if (d) next[sku] = d;
       else delete next[sku];
       return next;
     });
+    if (!d) {
+      setSaved("");
+      return;
+    }
+    const name = batch.products.find((p) => p.sku === sku)?.name ?? sku;
+    setSaved(`${d.status === "approved" ? "Approved" : "Rejected"}: ${name}.`);
+    // Move on to the next product; on the "To review" filter the list shrinks instead.
+    if (filter !== "pending" && current < shown.length - 1) setIndex(current + 1);
+  };
 
   return (
     <>
@@ -464,9 +555,24 @@ export function ReviewBoard({
         ]}
       />
       <main className="page">
+        {template}
+        <div className="section-header" id="review">
+          <span className="section-num">2</span>
+          <h2>Review products</h2>
+        </div>
+        <div className="divider" />
         <div className="filter-bar" role="group" aria-label="Filter products">
           {(["all", "pending", "approved", "rejected"] as const).map((f) => (
-            <button key={f} className="tab" aria-pressed={filter === f} onClick={() => setFilter(f)}>
+            <button
+              key={f}
+              className="tab"
+              aria-pressed={filter === f}
+              onClick={() => {
+                setFilter(f);
+                setIndex(0);
+                setSaved("");
+              }}
+            >
               {{ all: "All", pending: "To review", approved: "Approved", rejected: "Rejected" }[f]} <span className="n">{counts[f]}</span>
             </button>
           ))}
@@ -476,21 +582,57 @@ export function ReviewBoard({
             </a>
           ) : null}
         </div>
-        {template}
-        <div className="section-header">
-          <span className="section-num">2</span>
-          <h2>Products</h2>
-        </div>
-        <div className="divider" />
-        <section className="list" aria-live="polite">
-          {shown.length ? (
-            shown.map((p) => (
-              <Card key={p.sku} batchId={batch.id} product={p} decision={decisions[p.sku]} staff={staff} onDecision={onDecision} />
-            ))
-          ) : (
-            <div className="empty">No products here yet.</div>
-          )}
-        </section>
+
+        {product ? (
+          <>
+            <nav className="stepper" aria-label="Products in this batch">
+              <button className="btn step-btn" onClick={() => go(-1)} disabled={current === 0}>
+                ← Previous
+              </button>
+              <div className="step-dots">
+                {shown.map((p, i) => (
+                  <button
+                    key={p.sku}
+                    className={`step-dot ${statusOf(p.sku)}`}
+                    aria-current={i === current ? "true" : undefined}
+                    aria-label={`Product ${i + 1}: ${p.name} (${{ pending: "to review", approved: "approved", rejected: "rejected" }[statusOf(p.sku)]})`}
+                    title={p.name}
+                    onClick={() => {
+                      setSaved("");
+                      setIndex(i);
+                    }}
+                  >
+                    {i + 1}
+                  </button>
+                ))}
+              </div>
+              <span className="step-count">
+                Product {current + 1} of {shown.length}
+              </span>
+              <button className="btn step-btn primary" onClick={() => go(1)} disabled={current >= shown.length - 1}>
+                Next →
+              </button>
+            </nav>
+            {saved ? (
+              <p className="saved-line" role="status">
+                ✓ {saved}
+              </p>
+            ) : null}
+            <Card key={product.sku} batchId={batch.id} product={product} decision={decisions[product.sku]} staff={staff} onDecision={onDecision} />
+            <div className="stepper bottom">
+              <button className="btn step-btn" onClick={() => go(-1)} disabled={current === 0}>
+                ← Previous
+              </button>
+              <span className="step-count">Use ← and → keys to move between products</span>
+              <button className="btn step-btn primary" onClick={() => go(1)} disabled={current >= shown.length - 1}>
+                Next →
+              </button>
+            </div>
+          </>
+        ) : (
+          <div className="empty">{filter === "pending" ? "Everything in this batch has been reviewed." : "No products here yet."}</div>
+        )}
+
         {staff && batch.failures?.length ? (
           <section className="failures">
             <b>Not drafted this run (TIA only):</b>
