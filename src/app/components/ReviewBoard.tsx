@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useRef, useState, type ReactNode } from "react";
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { sanitizeCopyHtml, stripHtml } from "@/lib/copy/rules";
 import type { Batch, BatchProduct, Decision } from "@/lib/types";
 import { Hero } from "./Hero";
@@ -12,6 +12,37 @@ type Copy = { description_html: string; meta_title: string; meta_description: st
 
 const LIMITS = { title: 60, metaMin: 120, metaMax: 155 };
 const fmt = (n: number) => n.toLocaleString("en-CA");
+
+// Copy box that can be edited in place. React never manages its children: the HTML is written
+// once when `html` changes, so re-renders while typing (word count etc.) can't reset the text
+// or move the cursor.
+function EditableHtml({
+  html,
+  editing,
+  className,
+  onChange,
+}: {
+  html: string;
+  editing: boolean;
+  className: string;
+  onChange?: (el: HTMLDivElement) => void;
+}) {
+  const ref = useRef<HTMLDivElement>(null);
+  useLayoutEffect(() => {
+    if (editing && ref.current && ref.current.innerHTML !== html) ref.current.innerHTML = html;
+  }, [html, editing]);
+  if (!editing) return <div className={className} dangerouslySetInnerHTML={{ __html: html }} />;
+  return (
+    <div
+      ref={ref}
+      className={className}
+      contentEditable
+      suppressContentEditableWarning
+      spellCheck
+      onInput={onChange ? (e) => onChange(e.currentTarget) : undefined}
+    />
+  );
+}
 const words = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
 const norm = (s: string) =>
   " " + s.toLowerCase().replace(/&/g, "and").replace(/\bgray\b/g, "grey").replace(/[^a-z0-9.]+/g, " ") + " ";
@@ -367,17 +398,15 @@ function Card({
                   {editing ? "Editing suggested description" : status === "pending" ? "Suggested description" : "Approved description"}
                   <span className="wordcount">{sugWords} words</span>
                 </div>
-                <div
+                <EditableHtml
                   key={`desc-${mode}-${decision?.at ?? ""}`}
                   className="desc"
-                  contentEditable={editing}
-                  suppressContentEditableWarning
-                  spellCheck={editing}
-                  onInput={(e) => {
-                    descDraft.current = e.currentTarget.innerHTML;
-                    setWc(words(e.currentTarget.textContent ?? ""));
+                  editing={editing}
+                  html={editing ? descEdit ?? descHtml : descHtml}
+                  onChange={(el) => {
+                    descDraft.current = el.innerHTML;
+                    setWc(words(el.textContent ?? ""));
                   }}
-                  dangerouslySetInnerHTML={{ __html: editing ? descEdit ?? descHtml : descHtml }}
                 />
                 {product.note && status === "pending" ? (
                   <div className="note">
@@ -439,16 +468,14 @@ function Card({
             <div className="pane-title">
               Product FAQ <span className="wordcount">added below the description on the product page</span>
             </div>
-            <div
+            <EditableHtml
               key={`faq-${mode}-${decision?.at ?? ""}`}
               className="desc faq-body"
-              contentEditable={editing}
-              suppressContentEditableWarning
-              spellCheck={editing}
-              onInput={(e) => {
-                faqDraft.current = e.currentTarget.innerHTML;
+              editing={editing}
+              html={editing ? faqEdit ?? faqHtml : faqHtml}
+              onChange={(el) => {
+                faqDraft.current = el.innerHTML;
               }}
-              dangerouslySetInnerHTML={{ __html: editing ? faqEdit ?? faqHtml : faqHtml }}
             />
             {product.faqGaps.length && status === "pending" ? (
               <div className="note">
