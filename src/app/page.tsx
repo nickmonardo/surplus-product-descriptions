@@ -3,6 +3,8 @@ import { redirect } from "next/navigation";
 import { currentUser, isStaff } from "@/lib/auth";
 import { listBatchSummaries } from "@/lib/batches";
 import { TopBar } from "./components/TopBar";
+import { Hero } from "./components/Hero";
+import { Footer } from "./components/Footer";
 import { RunButton } from "./components/RunButton";
 
 export const dynamic = "force-dynamic";
@@ -15,34 +17,47 @@ export default async function Home() {
   if (!user) redirect("/login");
   const batches = await listBatchSummaries();
   const pending = batches.reduce((n, b) => n + b.pending, 0);
+  const approved = batches.reduce((n, b) => n + b.approved, 0);
   return (
     <>
       <TopBar user={user} />
-      <header className="top">
-        <h1>Product descriptions</h1>
-        <p className="intro">
-          Every week, new and thin product pages from your Google Merchant Center feed get a suggested description, meta
-          title, meta description and FAQ. {pending ? `${pending} still to review.` : "Everything has been reviewed."}
-        </p>
+      <Hero
+        micro="Surplus Furniture · Weekly SEO copy"
+        title="Product"
+        accent="descriptions"
+        intro="Every week, new and thin product pages from your Google Merchant Center feed get a suggested description, meta title, meta description and FAQ for you to review."
+        stats={[
+          { value: batches.length, label: batches.length === 1 ? "week" : "weeks" },
+          { value: pending, label: "to review" },
+          { value: approved, label: "approved" },
+        ]}
+      />
+      <main className="page">
         {isStaff(user) ? <RunButton /> : null}
-      </header>
-      <section className="batches" aria-label="Weekly batches">
-        {batches.map((b) => (
-          <Link key={b.id} href={`/batches/${b.id}`} className="batch-row">
-            <div>
-              <h2>Week of {dateLabel(b.createdAt)}</h2>
-              <p className="muted" style={{ fontSize: 13 }}>
-                {b.total} products · {b.source}
-              </p>
-            </div>
-            <div className="counts">
-              {b.pending ? <span className="pill pending">{b.pending} to review</span> : null}
-              {b.approved ? <span className="pill approved">{b.approved} approved</span> : null}
-              {b.rejected ? <span className="pill rejected">{b.rejected} rejected</span> : null}
-            </div>
-          </Link>
-        ))}
-      </section>
+        <div className="section-header">
+          <span className="section-num">1</span>
+          <h2>Weekly batches</h2>
+        </div>
+        <div className="divider" />
+        <section className="batches" aria-label="Weekly batches">
+          {batches.map((b) => (
+            <Link key={b.id} href={`/batches/${b.id}`} className="batch-row">
+              <div>
+                <h3>Week of {dateLabel(b.createdAt)}</h3>
+                <p className="muted">
+                  {b.total} products · {b.source}
+                </p>
+              </div>
+              <div className="counts">
+                {b.pending ? <span className="pill pending">{b.pending} to review</span> : null}
+                {b.approved ? <span className="pill approved">{b.approved} approved</span> : null}
+                {b.rejected ? <span className="pill rejected">{b.rejected} rejected</span> : null}
+              </div>
+            </Link>
+          ))}
+        </section>
+      </main>
+      <Footer />
     </>
   );
 }

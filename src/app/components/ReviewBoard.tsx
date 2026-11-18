@@ -3,6 +3,7 @@
 import { useMemo, useRef, useState, type ReactNode } from "react";
 import { sanitizeCopyHtml, stripHtml } from "@/lib/copy/rules";
 import type { Batch, BatchProduct, Decision } from "@/lib/types";
+import { Hero } from "./Hero";
 
 type Mode = "view" | "edit" | "reject";
 type Filter = "all" | "pending" | "approved" | "rejected";
@@ -272,7 +273,7 @@ function Card({
               />
               {product.faqGaps.length && status === "pending" ? (
                 <div className="note">
-                  <b>Needs from you:</b> shoppers also ask these, but the product data can&apos;t answer them yet.
+                  <b>Needs from you:</b>{" "}shoppers also ask these, but the product data can&apos;t answer them yet.
                   <ul className="gaps">
                     {product.faqGaps.map((g) => (
                       <li key={g.q}>
@@ -414,11 +415,13 @@ function Card({
 
 export function ReviewBoard({
   batch,
+  weekLabel,
   initialDecisions,
   staff,
   template,
 }: {
   batch: Batch;
+  weekLabel: string;
   initialDecisions: Record<string, Decision>;
   staff: boolean;
   template: ReactNode;
@@ -442,54 +445,70 @@ export function ReviewBoard({
 
   return (
     <>
-      <header className="top">
-        <h1>Product descriptions ready for review</h1>
-        <p className="intro">
-          {batch.products.length} products from your Google Merchant Center feed: {seo} new arrival{seo === 1 ? "" : "s"} that get an SEO pass on
-          their existing copy, and {thin} with thin descriptions. Each suggestion targets a keyword people in Canada search
-          for. Approve it as written, edit the wording, or reject it with a note.{" "}
-          {counts.pending ? `${counts.pending} still to review.` : "All reviewed."}
-        </p>
-        <div className="summary" role="group" aria-label="Filter products">
+      <Hero
+        micro={`Surplus Furniture · Week of ${weekLabel}`}
+        title="Ready for"
+        accent="review"
+        intro={
+          <>
+            {batch.products.length} products from your Google Merchant Center feed: {seo} new arrival{seo === 1 ? "" : "s"} that get an
+            SEO pass on their existing copy, and {thin} with thin descriptions. Approve each suggestion as written, edit the
+            wording, or reject it with a note.
+          </>
+        }
+        stats={[
+          { value: counts.all, label: "products" },
+          { value: counts.pending, label: "to review" },
+          { value: counts.approved, label: "approved" },
+          { value: counts.rejected, label: "rejected" },
+        ]}
+      />
+      <main className="page">
+        <div className="filter-bar" role="group" aria-label="Filter products">
           {(["all", "pending", "approved", "rejected"] as const).map((f) => (
             <button key={f} className="tab" aria-pressed={filter === f} onClick={() => setFilter(f)}>
               {{ all: "All", pending: "To review", approved: "Approved", rejected: "Rejected" }[f]} <span className="n">{counts[f]}</span>
             </button>
           ))}
           {counts.approved ? (
-            <a className="btn" href={`/api/batches/${batch.id}/export`} style={{ marginLeft: "auto", textDecoration: "none" }}>
+            <a className="btn primary export" href={`/api/batches/${batch.id}/export`}>
               Download approved copy (Magento CSV)
             </a>
           ) : null}
         </div>
-      </header>
-      {template}
-      <section className="list" aria-live="polite">
-        {shown.length ? (
-          shown.map((p) => (
-            <Card key={p.sku} batchId={batch.id} product={p} decision={decisions[p.sku]} staff={staff} onDecision={onDecision} />
-          ))
-        ) : (
-          <div className="empty">No products here yet.</div>
-        )}
-      </section>
-      {staff && batch.failures?.length ? (
-        <section className="failures">
-          <b>Not drafted this run (TIA only):</b>
-          <ul>
-            {batch.failures.map((f) => (
-              <li key={f.sku}>
-                {f.name} ({f.sku}): {f.error}
-              </li>
-            ))}
-          </ul>
+        {template}
+        <div className="section-header">
+          <span className="section-num">2</span>
+          <h2>Products</h2>
+        </div>
+        <div className="divider" />
+        <section className="list" aria-live="polite">
+          {shown.length ? (
+            shown.map((p) => (
+              <Card key={p.sku} batchId={batch.id} product={p} decision={decisions[p.sku]} staff={staff} onDecision={onDecision} />
+            ))
+          ) : (
+            <div className="empty">No products here yet.</div>
+          )}
         </section>
-      ) : null}
-      <footer>
-        Products and current descriptions come from your Google Merchant Center feed. Keyword volumes are monthly Google.ca
-        searches from Semrush. Approved copy can be downloaded as a Magento import file; once the store&apos;s API is
-        connected, it will be written to the product directly.
-      </footer>
+        {staff && batch.failures?.length ? (
+          <section className="failures">
+            <b>Not drafted this run (TIA only):</b>
+            <ul>
+              {batch.failures.map((f) => (
+                <li key={f.sku}>
+                  {f.name} ({f.sku}): {f.error}
+                </li>
+              ))}
+            </ul>
+          </section>
+        ) : null}
+        <p className="page-note">
+          Products and current descriptions come from your Google Merchant Center feed. Keyword volumes are monthly Google.ca
+          searches from Semrush. Approved copy can be downloaded as a Magento import file; once the store&apos;s API is
+          connected, it will be written to the product directly.
+        </p>
+      </main>
     </>
   );
 }

@@ -4,6 +4,7 @@ import { getBatch, getDecisions } from "@/lib/batches";
 import { TopBar } from "../../components/TopBar";
 import { Template } from "../../components/Template";
 import { ReviewBoard } from "../../components/ReviewBoard";
+import { Footer } from "../../components/Footer";
 
 export const dynamic = "force-dynamic";
 
@@ -19,8 +20,15 @@ export default async function BatchPage({ params }: { params: Promise<{ id: stri
   const decisions = await getDecisions(id);
   return (
     <>
-      <TopBar user={user} crumb={`Week of ${dateLabel(batch.createdAt)}`} />
-      <ReviewBoard batch={batch} initialDecisions={decisions} staff={isStaff(user)} template={<Template />} />
+      <TopBar user={user} />
+      <ReviewBoard
+        batch={batch}
+        weekLabel={dateLabel(batch.createdAt)}
+        initialDecisions={decisions}
+        staff={isStaff(user)}
+        template={<Template />}
+      />
+      <Footer />
     </>
   );
 }
