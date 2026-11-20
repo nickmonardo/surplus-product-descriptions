@@ -57,7 +57,25 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "dimensions",
+     "field": "Dimensions",
+     "ask": "Add the width, depth and height.",
+     "why": "Shoppers check that it fits their room before they buy.",
+     "needsValue": true,
+     "placeholder": "e.g. 42 W x 78 D x 65 H in"
+    },
+    {
+     "id": "care",
+     "field": "Care instructions",
+     "ask": "Add how to clean the fabric.",
+     "why": "Shoppers ask how to clean it, and it can go into the product FAQ.",
+     "needsValue": true,
+     "placeholder": "e.g. Spot clean with a damp cloth"
+    }
+   ]
   },
   {
    "sku": "6161BR20",
@@ -113,7 +131,33 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "colour",
+     "field": "Colour name",
+     "ask": "Confirm the colour name shoppers should see.",
+     "why": "The product name says brown and the current copy says taupe. The description uses both until you pick one.",
+     "needsValue": true,
+     "placeholder": "e.g. Taupe"
+    },
+    {
+     "id": "weight-capacity",
+     "field": "Weight capacity",
+     "ask": "Add the weight capacity.",
+     "why": "Tepperman's lists a 300 lb weight capacity on a similar sectional.",
+     "needsValue": true,
+     "placeholder": "e.g. 300 lb"
+    },
+    {
+     "id": "dimensions",
+     "field": "Dimensions",
+     "ask": "Add the width, depth and height.",
+     "why": "Shoppers check that it fits their room before they buy.",
+     "needsValue": true,
+     "placeholder": "e.g. 42 W x 78 D x 65 H in"
+    }
+   ]
   },
   {
    "sku": "8516MF09",
@@ -182,7 +226,33 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "reclining-type",
+     "field": "Reclining type",
+     "ask": "Say whether it reclines manually or with power.",
+     "why": "Shoppers ask before they buy, and it can go into the product FAQ.",
+     "needsValue": true,
+     "placeholder": "e.g. Manual (pull lever)"
+    },
+    {
+     "id": "weight-capacity",
+     "field": "Weight capacity",
+     "ask": "Add the weight capacity.",
+     "why": "Shoppers ask, and Tepperman's lists 360 lb on a similar recliner.",
+     "needsValue": true,
+     "placeholder": "e.g. 300 lb"
+    },
+    {
+     "id": "care",
+     "field": "Care instructions",
+     "ask": "Add how to clean the fabric.",
+     "why": "Shoppers ask how to clean it, and it can go into the product FAQ.",
+     "needsValue": true,
+     "placeholder": "e.g. Spot clean with a damp cloth"
+    }
+   ]
   },
   {
    "sku": "9000GG60",
@@ -238,7 +308,32 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "category",
+     "field": "Category",
+     "ask": "Add it to the Dining Room Sets category.",
+     "why": "It has no category in the feed, so it doesn't show on the Dining Room Sets page.",
+     "needsValue": false
+    },
+    {
+     "id": "materials",
+     "field": "Materials",
+     "ask": "Add what the table and chairs are made of.",
+     "why": "Tepperman's lists materials on similar sets; shoppers compare them.",
+     "needsValue": true,
+     "placeholder": "e.g. Wood and laminate"
+    },
+    {
+     "id": "dimensions",
+     "field": "Table dimensions",
+     "ask": "Add the table's width, depth and height.",
+     "why": "“What are the table dimensions?” is a common question for dining sets.",
+     "needsValue": true,
+     "placeholder": "e.g. 60 W x 36 D x 30 H in"
+    }
+   ]
   },
   {
    "sku": "2670BG2C",
@@ -294,7 +389,17 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "care",
+     "field": "Care instructions",
+     "ask": "Add how to clean the fabric.",
+     "why": "Shoppers ask how to clean it, and it can go into the product FAQ.",
+     "needsValue": true,
+     "placeholder": "e.g. Spot clean with a damp cloth"
+    }
+   ]
   },
   {
    "sku": "0356AO01",
@@ -350,7 +455,29 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "drawer-count",
+     "field": "Drawer count",
+     "ask": "Add the number of drawers.",
+     "why": "Shoppers search by drawer count. With 6 drawers the page can target “6 drawer dresser”.",
+     "needsValue": true,
+     "keyword": {
+      "keyword": "6 drawer dresser",
+      "volume": 2400
+     },
+     "placeholder": "e.g. 6 drawers"
+    },
+    {
+     "id": "materials",
+     "field": "Materials",
+     "ask": "Add what it's made of.",
+     "why": "Tepperman's lists materials (wood and laminate) on the same collection.",
+     "needsValue": true,
+     "placeholder": "e.g. Wood and laminate"
+    }
+   ]
   },
   {
    "sku": "0356AO05",
@@ -406,7 +533,29 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "drawer-count",
+     "field": "Drawer count",
+     "ask": "Add the number of drawers.",
+     "why": "If it has drawers, the page can target “nightstand with drawers”.",
+     "needsValue": true,
+     "keyword": {
+      "keyword": "nightstand with drawers",
+      "volume": 1000
+     },
+     "placeholder": "e.g. 2 drawers"
+    },
+    {
+     "id": "materials",
+     "field": "Materials",
+     "ask": "Add what it's made of.",
+     "why": "Tepperman's lists materials (wood and laminate) on the same collection.",
+     "needsValue": true,
+     "placeholder": "e.g. Wood and laminate"
+    }
+   ]
   },
   {
    "sku": "0760LG40",
@@ -455,7 +604,45 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "mattress-size",
+     "field": "Mattress size",
+     "ask": "Add the mattress size it takes.",
+     "why": "Shoppers ask which mattress fits. With a twin size the page can target “twin loft bed”.",
+     "needsValue": true,
+     "keyword": {
+      "keyword": "twin loft bed",
+      "volume": 720
+     },
+     "placeholder": "e.g. Twin"
+    },
+    {
+     "id": "colour",
+     "field": "Colour or finish",
+     "ask": "Add the colour or finish.",
+     "why": "The feed has none, so the description can't say what it looks like.",
+     "needsValue": true,
+     "placeholder": "e.g. Grey metal"
+    },
+    {
+     "id": "dimensions",
+     "field": "Dimensions",
+     "ask": "Add the width, depth and height.",
+     "why": "Shoppers check ceiling height and room fit before they buy a loft bed.",
+     "needsValue": true,
+     "placeholder": "e.g. 42 W x 78 D x 65 H in"
+    },
+    {
+     "id": "weight-capacity",
+     "field": "Weight capacity",
+     "ask": "Add the weight capacity.",
+     "why": "A common question for loft beds.",
+     "needsValue": true,
+     "placeholder": "e.g. 300 lb"
+    }
+   ]
   },
   {
    "sku": "W900TQ00",
@@ -511,7 +698,17 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "weight-capacity",
+     "field": "Weight capacity",
+     "ask": "Add the weight capacity.",
+     "why": "Tepperman's lists a 450 lb weight capacity on a similar frame.",
+     "needsValue": true,
+     "placeholder": "e.g. 300 lb"
+    }
+   ]
   },
   {
    "sku": "0051ES40",
@@ -576,7 +773,25 @@
     }
    ],
    "checksPassed": true,
-   "issues": []
+   "issues": [],
+   "dataAsks": [
+    {
+     "id": "dimensions",
+     "field": "Dimensions",
+     "ask": "Add the width, depth and height.",
+     "why": "“What are the dimensions?” is a common question for bunk beds.",
+     "needsValue": true,
+     "placeholder": "e.g. 42 W x 78 D x 65 H in"
+    },
+    {
+     "id": "weight-capacity",
+     "field": "Weight capacity",
+     "ask": "Add the weight capacity.",
+     "why": "“Is there a weight limit?” is a common question for bunk beds, and Tepperman's lists 220 lb.",
+     "needsValue": true,
+     "placeholder": "e.g. 300 lb"
+    }
+   ]
   }
  ]
 }

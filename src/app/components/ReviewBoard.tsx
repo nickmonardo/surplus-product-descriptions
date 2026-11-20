@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, type ReactNode } from "react";
 import { sanitizeCopyHtml, stripHtml } from "@/lib/copy/rules";
 import type { Batch, BatchProduct, Decision } from "@/lib/types";
+import Link from "next/link";
 import { Hero } from "./Hero";
 
 type Mode = "view" | "edit" | "reject";
@@ -141,17 +142,43 @@ function Rivals({ product, copy }: { product: BatchProduct; copy: Copy }) {
   );
 }
 
+function RevisionBanner({ revision }: { revision: NonNullable<BatchProduct["revision"]> }) {
+  const facts = Object.entries(revision.facts)
+    .map(([k, v]) => `${k.toLowerCase()} (${v})`)
+    .join(", ");
+  const at = revision.at
+    ? new Date(revision.at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Toronto" })
+    : "";
+  if (revision.state === "running") {
+    return (
+      <p className="rewrite running" role="status">
+        <span className="spinner" aria-hidden="true" /> Rewriting this description with new details from Magento. Refresh in a minute
+        to see it.
+      </p>
+    );
+  }
+  if (!facts) return null;
+  return (
+    <p className="rewrite done">
+      Rewritten{at ? ` ${at}` : ""} with {facts} from the Magento to-do list.
+      {revision.state === "failed" ? " A later rewrite failed; this is the last good version." : ""}
+    </p>
+  );
+}
+
 function Card({
   batchId,
   product,
   decision,
   staff,
+  magentoOpen,
   onDecision,
 }: {
   batchId: string;
   product: BatchProduct;
   decision?: Decision;
   staff: boolean;
+  magentoOpen: number;
   onDecision: (sku: string, d: Decision | null) => void;
 }) {
   const [mode, setMode] = useState<Mode>("view");
@@ -239,7 +266,7 @@ function Card({
 
   const statusLabel = { pending: "To review", approved: decision?.edited ? "Approved with edits" : "Approved", rejected: "Rejected" }[status];
   const when = decision?.at
-    ? new Date(decision.at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit" })
+    ? new Date(decision.at).toLocaleString("en-CA", { month: "short", day: "numeric", hour: "numeric", minute: "2-digit", timeZone: "America/Toronto" })
     : "";
   const tabs: { id: Tab; label: string }[] = [
     { id: "description", label: "Description & Google preview" },
@@ -323,6 +350,7 @@ function Card({
                   View on site
                 </a>
               ) : null}
+              {magentoOpen ? <Link href="/magento">{magentoOpen} to add in Magento</Link> : null}
             </div>
           </div>
         </div>
@@ -330,6 +358,8 @@ function Card({
       </div>
 
       {actions}
+
+      {product.revision ? <RevisionBanner revision={product.revision} /> : null}
 
       {mode === "reject" ? (
         <div className="reject-box">
@@ -508,16 +538,20 @@ export function ReviewBoard({
   initialDecisions,
   staff,
   template,
+  magentoOpen = {},
+  initialSku,
 }: {
   batch: Batch;
   weekLabel: string;
   initialDecisions: Record<string, Decision>;
   staff: boolean;
   template: ReactNode;
+  magentoOpen?: Record<string, number>;
+  initialSku?: string;
 }) {
   const [decisions, setDecisions] = useState(initialDecisions);
   const [filter, setFilter] = useState<Filter>("all");
-  const [index, setIndex] = useState(0);
+  const [index, setIndex] = useState(() => Math.max(0, batch.products.findIndex((p) => p.sku === initialSku)));
   const [saved, setSaved] = useState("");
   const statusOf = (sku: string) => decisions[sku]?.status ?? "pending";
   const counts = { all: batch.products.length, pending: 0, approved: 0, rejected: 0 };
@@ -645,7 +679,15 @@ export function ReviewBoard({
                 ✓ {saved}
               </p>
             ) : null}
-            <Card key={product.sku} batchId={batch.id} product={product} decision={decisions[product.sku]} staff={staff} onDecision={onDecision} />
+            <Card
+              key={`${product.sku}-${product.revision?.at ?? ""}`}
+              batchId={batch.id}
+              product={product}
+              decision={decisions[product.sku]}
+              staff={staff}
+              magentoOpen={magentoOpen[product.sku] ?? 0}
+              onDecision={onDecision}
+            />
             <div className="stepper bottom">
               <button className="btn step-btn" onClick={() => go(-1)} disabled={current === 0}>
                 ← Previous

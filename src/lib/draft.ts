@@ -68,14 +68,17 @@ function check(draft: ProductDraft, product: ProductInput, plan: KeywordPlan) {
   return { faqHtml, issues: [...validateDraft(draft, product, plan), ...validateFaq(faqHtml, product, plan)] };
 }
 
-/** Draft, check, and send the problems back once if any check fails. */
+/**
+ * Draft, check, and send the problems back once if any check fails. `requestText` replaces
+ * the new-draft request (a revision after the store confirmed details uses its own).
+ */
 export async function draftProduct(
   product: ProductInput,
   plan: KeywordPlan,
-  opts: { research: boolean; shopperQuestions?: string[] },
+  opts: { research: boolean; shopperQuestions?: string[]; requestText?: string },
 ): Promise<DraftResult> {
   const first = await call(
-    [{ role: "user", content: draftRequestText(product, plan, opts) }],
+    [{ role: "user", content: opts.requestText ?? draftRequestText(product, plan, opts) }],
     opts.research,
   );
   let draft = JSON.parse(first.text) as ProductDraft;

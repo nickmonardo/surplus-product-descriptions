@@ -24,6 +24,13 @@ dashboard where the client approves, edits or rejects them.
    states that Surplus's listing lacks.
 6. **Review.** Reviewers get an email with a sign-in link. Approved copy (with any edits) is
    saved with who approved it and when, and can be downloaded as a Magento import file.
+7. **Magento to-do.** Details the feed lacks that would improve the copy (drawer count,
+   mattress size, dimensions, weight capacity, care, answers to shopper questions) are listed
+   at `/magento` for Surplus's developer, each with why it matters and the keyword it unlocks
+   (`src/lib/copy/data-asks.ts`). Checking one off with the value added in Magento makes that
+   value a product fact and rewrites the description in the background (`src/lib/rewrite.ts`):
+   the rewrite keeps the copy the client last approved or edited, works the new detail in,
+   re-picks the keyword, passes the same checks, and sends the product back to "To review".
 
 ## Using it
 
@@ -34,6 +41,11 @@ dashboard where the client approves, edits or rejects them.
   In Magento: System → Data Transfer → Import, entity type Products, import behaviour
   Add/Update, upload the file. Columns: `sku, description, meta_title, meta_description`
   (the FAQ is appended to the description).
+- **Magento to-do (developer):** add the developer's email to `REVIEWER_EMAILS`. They
+  open **Magento to-do**, add each detail in Magento, then enter what they added and press
+  **Done** (or **Doesn't apply**). The description is rewritten in about a minute and shows
+  up in the review list with a note saying which details it now uses. **Reopen** undoes a
+  check-off; enter a corrected value to rewrite again.
 - **Run now (TIA staff):** the dashboard home has **Check feed** (lists what would be drafted)
   and **Run this week's batch now**.
 

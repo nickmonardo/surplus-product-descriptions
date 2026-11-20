@@ -280,6 +280,48 @@ export function draftRequestText(
   );
 }
 
+export interface CurrentCopy {
+  description_html: string;
+  meta_title: string;
+  meta_description: string;
+  faq_html?: string;
+}
+
+/**
+ * Asks for a revision of copy the client has seen, after the store confirmed new details:
+ * keep what works, work the new details in, and use the (possibly new) keyword plan.
+ */
+export function revisionRequestText(
+  product: ProductInput,
+  plan: KeywordPlan,
+  current: CurrentCopy,
+  added: Record<string, string>,
+  shopperQuestions?: string[],
+): string {
+  return JSON.stringify(
+    {
+      task: "The store just confirmed the details in new_details. Revise the current copy to work them in where they help a shopper, and answer any FAQ question they now answer. Keep the rest of the current copy, its facts and its wording unless a new detail changes it. Follow the primary keyword below, which may have changed because of the new details. Same structure, limits and rules as a new draft.",
+      new_details: added,
+      product: productFacts(product),
+      current_copy: {
+        description: stripHtml(current.description_html),
+        description_html: current.description_html,
+        meta_title: current.meta_title,
+        meta_description: current.meta_description,
+        faq: stripHtml(current.faq_html ?? "") || null,
+      },
+      keywords: {
+        primary: plan.primary?.keyword ?? null,
+        secondary: plan.secondary.map((e) => e.keyword),
+      },
+      shopper_questions: shopperQuestions?.length ? shopperQuestions : undefined,
+      research: "No research: use only the product data, the new details and the current copy.",
+    },
+    null,
+    2,
+  );
+}
+
 const escapeHtml = (s: string) =>
   s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;").replace(/"/g, "&quot;");
 

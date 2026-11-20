@@ -18,9 +18,10 @@ export default async function Home() {
   const batches = await listBatchSummaries();
   const pending = batches.reduce((n, b) => n + b.pending, 0);
   const approved = batches.reduce((n, b) => n + b.approved, 0);
+  const magentoOpen = batches.reduce((n, b) => n + b.magentoOpen, 0);
   return (
     <>
-      <TopBar user={user} />
+      <TopBar user={user} active="descriptions" />
       <Hero
         micro="Surplus Furniture · Weekly SEO copy"
         title="Product"
@@ -34,6 +35,17 @@ export default async function Home() {
       />
       <main className="page">
         {isStaff(user) ? <RunButton /> : null}
+        {magentoOpen ? (
+          <Link href="/magento" className="batch-row todo-callout">
+            <div>
+              <h3>Magento to-do</h3>
+              <p className="muted">
+                Product details to add in Magento. Each one checked off rewrites that product&apos;s description with it.
+              </p>
+            </div>
+            <span className="pill pending">{magentoOpen} open</span>
+          </Link>
+        ) : null}
         <div className="section-header">
           <span className="section-num">1</span>
           <h2>Weekly batches</h2>

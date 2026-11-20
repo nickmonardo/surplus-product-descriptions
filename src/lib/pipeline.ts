@@ -1,6 +1,7 @@
 import "server-only";
 import { draftedSkus, listBatchIds, getBatch, markDrafted, saveBatch } from "./batches";
 import { findTeppermansEquivalent } from "./competitors/teppermans";
+import { dataAsks } from "./copy/data-asks";
 import { pickKeywords } from "./copy/keywords";
 import { shopperQuestions } from "./copy/questions";
 import { sanitizeCopyHtml, stripHtml } from "./copy/rules";
@@ -114,6 +115,8 @@ export async function runWeekly(opts: RunOptions = {}): Promise<RunResult> {
           competitors: rival ? [rival] : [],
           checksPassed: draft.issues.length === 0,
           issues: draft.issues.map((i) => i.message),
+          input: product,
+          dataAsks: dataAsks(product, plan.category?.id, draft.draft.faq_gaps ?? []),
         });
       } catch (error) {
         failures.push({ sku: product.sku, name: product.name, error: error instanceof Error ? error.message : "Drafting failed" });
