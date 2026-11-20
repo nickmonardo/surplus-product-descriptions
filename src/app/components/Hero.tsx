@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-/** TIA gradient banner: micro label, uppercase title with an accent word, frosted stat pills. */
+/** Page header: a small label, the title, one line of context and plain figures on the right. */
 export function Hero({
   micro,
   title,
@@ -17,7 +17,7 @@ export function Hero({
   return (
     <section className="hero">
       <div className="hero-inner">
-        <p className="hero-micro">✦ {micro}</p>
+        <p className="hero-micro">{micro}</p>
         <h1>
           {title}
           {accent ? (

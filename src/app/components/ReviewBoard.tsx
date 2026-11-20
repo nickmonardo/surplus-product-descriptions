@@ -618,10 +618,8 @@ export function ReviewBoard({
       <main className="page">
         {template}
         <div className="section-header" id="review">
-          <span className="section-num">2</span>
           <h2>Review products</h2>
         </div>
-        <div className="divider" />
         <div className="filter-bar" role="group" aria-label="Filter products">
           {(["all", "pending", "approved", "rejected"] as const).map((f) => (
             <button

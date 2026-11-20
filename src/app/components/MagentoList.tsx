@@ -208,10 +208,8 @@ export function MagentoList({ products }: { products: TodoProduct[] }) {
   return (
     <>
       <div className="section-header">
-        <span className="section-num">1</span>
         <h2>Details to add</h2>
       </div>
-      <div className="divider" />
       <div className="filter-bar" role="group" aria-label="Show">
         {(
           [

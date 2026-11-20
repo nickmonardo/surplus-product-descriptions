@@ -2,7 +2,6 @@ export function Template() {
   return (
     <details className="template">
       <summary className="section-header">
-        <span className="section-num">1</span>
         <h2>How every description is built</h2>
         <span className="summary-hint">Show</span>
       </summary>

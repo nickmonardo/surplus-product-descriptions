@@ -47,10 +47,8 @@ export default async function Home() {
           </Link>
         ) : null}
         <div className="section-header">
-          <span className="section-num">1</span>
           <h2>Weekly batches</h2>
         </div>
-        <div className="divider" />
         <section className="batches" aria-label="Weekly batches">
           {batches.map((b) => (
             <Link key={b.id} href={`/batches/${b.id}`} className="batch-row">

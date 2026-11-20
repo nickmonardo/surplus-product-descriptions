@@ -14,7 +14,7 @@ export default async function Login({ searchParams }: { searchParams: Promise<Re
       <TopBar />
       <main className="page">
         <form className="login" method="post" action="/api/auth/request">
-          <p className="hero-micro dark">✦ Surplus Furniture · Product descriptions</p>
+          <p className="hero-micro dark">Surplus Furniture · Product descriptions</p>
           <h1>Sign in</h1>
           {params.sent ? (
             <p className="flash" role="status">
