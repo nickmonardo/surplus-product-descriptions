@@ -4,6 +4,7 @@ import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState, typ
 import { sanitizeCopyHtml, stripHtml } from "@/lib/copy/rules";
 import type { Batch, BatchProduct, Decision } from "@/lib/types";
 import Link from "next/link";
+import { httpUrl } from "@/lib/urls";
 import { Hero } from "./Hero";
 
 type Mode = "view" | "edit" | "reject";
@@ -62,7 +63,8 @@ function YesNo({ value }: { value?: boolean }) {
 }
 
 function Serp({ url, title, meta }: { url?: string; title: string; meta: string }) {
-  const path = url ? new URL(url).pathname.replace(/^\//, "") : "";
+  const safe = httpUrl(url);
+  const path = safe ? new URL(safe).pathname.replace(/^\//, "") : "";
   return (
     <div className="serp-box" aria-label="Google search preview">
       <div className="serp-site">
@@ -119,7 +121,13 @@ function Rivals({ product, copy }: { product: BatchProduct; copy: Copy }) {
               ) : (
                 <tr key={i}>
                   <td className="who">
-                    <a href={c.url} target="_blank" rel="noopener noreferrer">{c.site}</a>
+                    {httpUrl(c.url) ? (
+                      <a href={httpUrl(c.url)} target="_blank" rel="noopener noreferrer">
+                        {c.site}
+                      </a>
+                    ) : (
+                      c.site
+                    )}
                     <span className="cmp">{c.name}</span>
                     <span className={c.same || c.sameBrand ? "same" : "cmp"}>
                       {c.same ? "Same product" : c.sameBrand ? "Same brand · similar product" : "Similar product"}
@@ -326,12 +334,12 @@ function Card({
     <article className="card" data-status={status} id={`card-${product.sku}`}>
       <div className="card-head">
         <div className="head-main">
-          {product.image ? (
+          {httpUrl(product.image) ? (
             // Product photos come from the store's own media URLs.
             // eslint-disable-next-line @next/next/no-img-element
             <img
               className="product-img"
-              src={product.image}
+              src={httpUrl(product.image)}
               alt=""
               onError={(e) => {
                 e.currentTarget.style.display = "none";
@@ -345,8 +353,8 @@ function Card({
               <span className="mono">SKU {product.sku}</span>
               {product.category ? <span>{product.category}</span> : null}
               {product.created ? <span>Added {dateLabel(product.created)}</span> : null}
-              {product.url ? (
-                <a href={product.url} target="_blank" rel="noopener noreferrer">
+              {httpUrl(product.url) ? (
+                <a href={httpUrl(product.url)} target="_blank" rel="noopener noreferrer">
                   View on site
                 </a>
               ) : null}

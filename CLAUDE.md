@@ -19,8 +19,14 @@ Surplus Furniture each week and lets the client review it. Read `README.md` firs
 - **HTML** in copy is `p`, `ul`, `li`, `strong` only. Anything saved goes through
   `sanitizeCopyHtml()` on the server.
 - **Auth:** every route that reads or writes batches checks `currentUser()`; write routes also
-  check the request origin. TIA staff (`isStaff()`) alone can run the pipeline. Never log
-  sign-in links in production.
+  call `sameOrigin()` (and `isJson()` for JSON) from `src/lib/request-guard.ts`. TIA staff
+  (`isStaff()`) alone can run the pipeline. Sign-in links are single-use (Continue page, then
+  POST `/api/auth/verify`); every return path goes through `safeNext()`. Never log sign-in
+  links in production.
+- **Security:** `SECURITY.md` describes the model for the client's developer; keep it true
+  when you change auth, storage, headers (`src/proxy.ts` CSP, `next.config.ts`) or what is sent
+  to third parties. Links/images from feeds go through `httpUrl()` (`src/lib/urls.ts`).
+  `npm audit` stays at 0.
 - **Storage** is private Vercel Blob (`src/lib/storage.ts`); keys are validated
   (`isBatchId`, `isSku`) before they become paths.
 - **Competitor pages** are read with plain GET requests that identify the app. If a site
@@ -38,6 +44,8 @@ src/lib/competitors/ teppermans.ts
 src/lib/             draft.ts (Claude), pipeline.ts (weekly run), rewrite.ts (rewrite after a
                      to-do is checked off), select.ts, batches.ts,
                      storage.ts, tokens.ts + auth.ts (sign-in), mail.ts (Mailgun)
+src/lib/             request-guard.ts (same-origin/JSON checks), urls.ts (http(s)-only links)
+src/proxy.ts         per-request CSP nonce; other security headers are in next.config.ts
 src/app/             dashboard pages, components/ReviewBoard.tsx, api/ routes
 data/seed-batch.json the first (prototype) batch
 tests/               node --test, loading the TS modules with the TypeScript transpiler

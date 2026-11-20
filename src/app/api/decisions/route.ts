@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { currentUser } from "@/lib/auth";
+import { isJson, sameOrigin } from "@/lib/request-guard";
 import { clearDecision, getBatch, isBatchId, isSku, saveDecision } from "@/lib/batches";
 import { sanitizeCopyHtml } from "@/lib/copy/rules";
 import type { Decision } from "@/lib/types";
@@ -24,16 +25,11 @@ const Body = z.object({
 
 const noStore = { "Cache-Control": "no-store" };
 
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  return !origin || origin === req.nextUrl.origin;
-}
-
 /** Approve (as written or edited), reject with an optional note, or undo a decision. */
 export async function POST(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in again to save." }, { status: 401, headers: noStore });
-  if (!sameOrigin(req)) return NextResponse.json({ error: "Not allowed" }, { status: 403, headers: noStore });
+  if (!sameOrigin(req) || !isJson(req)) return NextResponse.json({ error: "Not allowed" }, { status: 403, headers: noStore });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "That request wasn't valid." }, { status: 400, headers: noStore });
   const { batchId, sku, action, copy, reason } = parsed.data;

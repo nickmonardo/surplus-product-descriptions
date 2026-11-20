@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
+import { httpUrl } from "@/lib/urls";
 import type { DataAsk, FixState, RevisionInfo } from "@/lib/types";
 
 export interface TodoProduct {
@@ -229,11 +230,11 @@ export function MagentoList({ products }: { products: TodoProduct[] }) {
             <article className="card todo-card" key={`${p.batchId}/${p.sku}`}>
               <div className="card-head">
                 <div className="head-main">
-                  {p.image ? (
+                  {httpUrl(p.image) ? (
                     // eslint-disable-next-line @next/next/no-img-element
                     <img
                       className="product-img"
-                      src={p.image}
+                      src={httpUrl(p.image)}
                       alt=""
                       width={64}
                       height={64}
@@ -248,8 +249,8 @@ export function MagentoList({ products }: { products: TodoProduct[] }) {
                     <div className="meta">
                       <span className="mono">SKU {p.sku}</span>
                       <span>Week of {p.week}</span>
-                      {p.url ? (
-                        <a href={p.url} target="_blank" rel="noreferrer">
+                      {httpUrl(p.url) ? (
+                        <a href={httpUrl(p.url)} target="_blank" rel="noopener noreferrer">
                           Product page ↗
                         </a>
                       ) : null}

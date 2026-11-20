@@ -1,6 +1,7 @@
 import { after, NextResponse, type NextRequest } from "next/server";
 import { z } from "zod";
 import { currentUser } from "@/lib/auth";
+import { isJson, sameOrigin } from "@/lib/request-guard";
 import { clearFix, getBatch, isBatchId, isSku, saveFix } from "@/lib/batches";
 import { isAskId } from "@/lib/copy/data-asks";
 import { runRewrite, startRewrite } from "@/lib/rewrite";
@@ -19,11 +20,6 @@ const Body = z.object({
 
 const noStore = { "Cache-Control": "no-store" };
 
-function sameOrigin(req: NextRequest): boolean {
-  const origin = req.headers.get("origin");
-  return !origin || origin === req.nextUrl.origin;
-}
-
 /**
  * Check off a Magento to-do item (done, with the value when it has one, or "doesn't apply"),
  * reopen it, or retry a product's rewrite. A done item with a value rewrites the product's
@@ -32,7 +28,7 @@ function sameOrigin(req: NextRequest): boolean {
 export async function POST(req: NextRequest) {
   const user = await currentUser();
   if (!user) return NextResponse.json({ error: "Sign in again to save." }, { status: 401, headers: noStore });
-  if (!sameOrigin(req)) return NextResponse.json({ error: "Not allowed" }, { status: 403, headers: noStore });
+  if (!sameOrigin(req) || !isJson(req)) return NextResponse.json({ error: "Not allowed" }, { status: 403, headers: noStore });
   const parsed = Body.safeParse(await req.json().catch(() => null));
   if (!parsed.success) return NextResponse.json({ error: "That request wasn't valid." }, { status: 400, headers: noStore });
   const { batchId, sku, askId, action } = parsed.data;

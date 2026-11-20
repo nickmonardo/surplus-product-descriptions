@@ -4,7 +4,13 @@ import { getBatch, getDecisions } from "@/lib/batches";
 
 export const dynamic = "force-dynamic";
 
-const cell = (v: string) => (/[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v);
+// A cell starting with = + @ (or a tab/CR) runs as a formula if the file is opened in a
+// spreadsheet. Copy never legitimately starts that way, so those characters are dropped.
+const neutral = (v: string) => v.replace(/^[=+@\t\r]+/, "");
+const cell = (raw: string) => {
+  const v = neutral(raw);
+  return /[",\n\r]/.test(v) ? `"${v.replace(/"/g, '""')}"` : v;
+};
 
 /**
  * Approved copy as a Magento product import file (System → Data Transfer → Import,

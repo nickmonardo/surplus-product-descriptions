@@ -20,6 +20,15 @@ export async function startRewrite(batchId: string, sku: string): Promise<string
   const facts = confirmedFacts(product.dataAsks ?? [], await getFixes(batchId, sku));
   if (!Object.keys(facts).length) return null;
   const previous = await getRevision(batchId, sku);
+  // One rewrite per product at a time: a repeat request while one runs (double click, a
+  // retry spree) doesn't start another Claude call. A run stuck over 5 minutes can restart.
+  if (
+    previous?.state === "running" &&
+    Date.now() - Date.parse(previous.startedAt) < 5 * 60_000 &&
+    JSON.stringify(previous.facts) === JSON.stringify(facts)
+  ) {
+    return null;
+  }
   const requestId = randomUUID();
   await saveRevision(batchId, {
     sku,

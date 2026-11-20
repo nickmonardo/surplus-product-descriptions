@@ -9,6 +9,9 @@ import { del, get, list, put } from "@vercel/blob";
 //   batches/<id>.json             a weekly batch
 //   decisions/<batchId>/<sku>.json one decision per product (last write wins)
 //   state/drafted.json            SKUs already drafted, so they aren't drafted again
+//   fixes/<batchId>/<sku>/<id>.json, revisions/<batchId>/<sku>.json  Magento to-do and rewrites
+//   auth/used-links/<hash>.json   sign-in links already used (single-use)
+//   auth/throttle/<hash>.json     when a sign-in link was last emailed to an address
 
 const blobEnabled = () => Boolean(process.env.BLOB_READ_WRITE_TOKEN);
 const LOCAL_ROOT = path.join(process.cwd(), ".data");
@@ -46,6 +49,32 @@ export async function writeJson(key: string, value: unknown): Promise<void> {
   const file = path.join(LOCAL_ROOT, key);
   await fs.mkdir(path.dirname(file), { recursive: true });
   await fs.writeFile(file, body);
+}
+
+/**
+ * Writes only if the key doesn't exist yet. True when this call created it, false when it
+ * was already there (used for single-use sign-in links, where two clicks must not both win).
+ */
+export async function createJson(key: string, value: unknown): Promise<boolean> {
+  const body = JSON.stringify(value);
+  if (blobEnabled()) {
+    try {
+      await put(key, body, { access: "private", addRandomSuffix: false, allowOverwrite: false, contentType: "application/json" });
+      return true;
+    } catch (error) {
+      if ((await readJson(key)) !== null) return false;
+      throw error;
+    }
+  }
+  const file = path.join(LOCAL_ROOT, key);
+  await fs.mkdir(path.dirname(file), { recursive: true });
+  try {
+    await fs.writeFile(file, body, { flag: "wx" });
+    return true;
+  } catch (error) {
+    if ((error as NodeJS.ErrnoException).code === "EEXIST") return false;
+    throw error;
+  }
 }
 
 export async function removeKey(key: string): Promise<void> {

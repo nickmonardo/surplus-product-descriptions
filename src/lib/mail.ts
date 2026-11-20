@@ -43,8 +43,8 @@ export function signInMail(to: string, link: string): Mail {
   return {
     to,
     subject: "Your sign-in link: Surplus product descriptions",
-    text: `Sign in to review Surplus Furniture product descriptions:\n\n${link}\n\nThe link works for 15 minutes. If you didn't ask for it, you can ignore this email.`,
-    html: `<p>Sign in to review Surplus Furniture product descriptions:</p><p><a href="${esc(link)}">Sign in</a></p><p style="color:#666">The link works for 15 minutes. If you didn't ask for it, you can ignore this email.</p>`,
+    text: `Sign in to review Surplus Furniture product descriptions:\n\n${link}\n\nThe link works once, for 15 minutes. If you didn't ask for it, you can ignore this email.`,
+    html: `<p>Sign in to review Surplus Furniture product descriptions:</p><p><a href="${esc(link)}">Sign in</a></p><p style="color:#666">The link works once, for 15 minutes. If you didn't ask for it, you can ignore this email.</p>`,
   };
 }
 
@@ -53,7 +53,7 @@ export function batchReadyMail(to: string, link: string, count: number, seo: num
   return {
     to,
     subject: `This week's product descriptions are ready (${count})`,
-    text: `${summary}\n\nApprove, edit or reject each one here:\n${link}\n\nThe link signs you in and works for 3 days.`,
-    html: `<p>${esc(summary)}</p><p><a href="${esc(link)}">Review this week's descriptions</a></p><p style="color:#666">The link signs you in and works for 3 days.</p>`,
+    text: `${summary}\n\nApprove, edit or reject each one here:\n${link}\n\nThe link signs you in once and works for 3 days.`,
+    html: `<p>${esc(summary)}</p><p><a href="${esc(link)}">Review this week's descriptions</a></p><p style="color:#666">The link signs you in once and works for 3 days.</p>`,
   };
 }

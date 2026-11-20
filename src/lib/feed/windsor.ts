@@ -2,6 +2,7 @@
 // Connectors API (the same endpoint Briefcase uses: /all with select_accounts).
 // Merchant Center is a stand-in for Magento until the store's API is connected: it
 // carries the title, description, brand, colour, product type, link and creation date.
+import { httpUrl } from "../urls";
 import type { ProductInput } from "../copy/rules";
 
 const WINDSOR_URL = "https://connectors.windsor.ai/all";
@@ -40,6 +41,7 @@ export function cleanProductUrl(link: string | null | undefined): string | undef
   if (!link) return undefined;
   try {
     const url = new URL(link);
+    if (url.protocol !== "https:" && url.protocol !== "http:") return undefined;
     url.search = "";
     url.hash = "";
     return url.toString();
@@ -123,6 +125,9 @@ export async function fetchMerchantProducts(opts: FeedOptions): Promise<{ produc
     (r) => (!r.datasource || r.datasource === "google_merchant") && (!r.account_id || String(r.account_id) === opts.accountId),
   );
   const images: Record<string, string> = {};
-  for (const r of own) if (r.product_id && r.product_image_link) images[r.product_id] = r.product_image_link;
+  for (const r of own) {
+    const image = r.product_id ? httpUrl(r.product_image_link) : undefined;
+    if (r.product_id && image) images[r.product_id] = image;
+  }
   return { products: productsFromMerchantRows(own), images };
 }

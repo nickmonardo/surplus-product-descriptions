@@ -95,13 +95,9 @@ npm run build
 
 ## Security notes
 
-- Sign-in links and sessions are HMAC-signed and expire (links: 15 minutes from the sign-in
-  page, 3 days in the weekly email; sessions: 14 days). With no database, a link is not
-  single-use: anyone holding an unexpired link can sign in, so don't forward the emails.
-- Removing an address from `REVIEWER_EMAILS` (or its domain from `ALLOWED_DOMAINS`) ends that
-  person's access immediately, including existing sessions.
-- Edited copy is sanitized on the server to `p`, `ul`, `li` and `strong` only.
-- Blob storage is private; batches and decisions are only readable through the app.
+See [SECURITY.md](SECURITY.md): sign-in (single-use email links, 14-day signed sessions,
+allowlist), request protection, content sanitizing, headers and CSP, secrets, the November
+2026 review and accepted risks.
 
 ## Not yet
 

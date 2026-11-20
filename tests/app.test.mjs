@@ -31,7 +31,8 @@ const require = createRequire(import.meta.url);
 const keywords = load('src/lib/copy/keywords.ts');
 const rules = load('src/lib/copy/rules.ts');
 const tokens = load('src/lib/tokens.ts');
-const windsor = load('src/lib/feed/windsor.ts');
+const urls = load('src/lib/urls.ts');
+const windsor = load('src/lib/feed/windsor.ts', { '../urls': urls });
 const select = load('src/lib/select.ts', { './copy/rules': rules });
 const tepp = load('src/lib/competitors/teppermans.ts');
 

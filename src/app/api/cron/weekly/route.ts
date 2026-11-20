@@ -2,6 +2,7 @@ import { timingSafeEqual } from "node:crypto";
 import { NextResponse, type NextRequest } from "next/server";
 import { currentUser, isStaff } from "@/lib/auth";
 import { runWeekly } from "@/lib/pipeline";
+import { sameOrigin } from "@/lib/request-guard";
 
 export const maxDuration = 300;
 export const dynamic = "force-dynamic";
@@ -23,7 +24,7 @@ async function handle(req: NextRequest) {
   const fromCron = bearerOk(req);
   if (!fromCron) {
     const user = await currentUser();
-    if (!user || !isStaff(user) || req.method !== "POST")
+    if (!user || !isStaff(user) || req.method !== "POST" || !sameOrigin(req))
       return NextResponse.json({ error: "Not allowed" }, { status: 401, headers: { "Cache-Control": "no-store" } });
   }
   const dryRun = req.nextUrl.searchParams.get("dry") === "1";
