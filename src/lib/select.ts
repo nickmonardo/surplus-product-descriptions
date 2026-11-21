@@ -14,3 +14,15 @@ export function selectCandidates(products: ProductInput[], drafted: Set<string>,
     (b.product.createdAt ?? "").localeCompare(a.product.createdAt ?? "");
   return [...scored.filter(isNew).sort(byDate), ...scored.filter((c) => !isNew(c)).sort(byDate)].slice(0, limit);
 }
+
+/**
+ * Review order: the weakest current descriptions first (fewest words, so missing ones lead),
+ * where the new copy makes the biggest difference. Ties keep their batch order.
+ */
+export function reviewOrder<T extends { currentText: string }>(products: T[]): T[] {
+  const words = (t: string) => (t.trim() ? t.trim().split(/\s+/).length : 0);
+  return products
+    .map((p, i) => ({ p, i, w: words(p.currentText ?? "") }))
+    .sort((a, b) => a.w - b.w || a.i - b.i)
+    .map(({ p }) => p);
+}

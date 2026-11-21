@@ -122,3 +122,11 @@ test("Tepperman's search and product pages parse, and off-type results are skipp
   assert.equal(tepp.hasKeyword(parsed.description, 'swivel recliner'), false);
   assert.equal(tepp.hasKeyword('A swivel recliner for you', 'swivel recliner'), true);
 });
+
+test('review order puts the weakest current descriptions first, keeping ties in order', () => {
+  const p = (sku, words) => ({ sku, currentText: Array(words).fill('w').join(' ') });
+  const order = select.reviewOrder([p('strong', 150), p('a39', 39), p('missing', 0), p('b39', 39), p('loft', 6)]).map((x) => x.sku);
+  assert.deepEqual(order, ['missing', 'loft', 'a39', 'b39', 'strong']);
+  const seed = JSON.parse(fs.readFileSync('data/seed-batch.json', 'utf8'));
+  assert.deepEqual(select.reviewOrder(seed.products).slice(0, 3).map((x) => x.sku), ['0760LG40', 'W900TQ00', '0051ES40']);
+});

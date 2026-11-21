@@ -3,6 +3,7 @@ import seed from "../../data/seed-batch.json";
 import { listKeys, readJson, removeKey, writeJson } from "./storage";
 import { isAskId } from "./copy/data-asks";
 import type { ProductInput } from "./copy/rules";
+import { reviewOrder } from "./select";
 import type { Batch, BatchProduct, BatchSummary, Decision, FixState, Revision } from "./types";
 
 // The first batch (the November 2026 prototype's ten products) ships with the code, so the
@@ -21,13 +22,15 @@ async function readBatch(id: string): Promise<Batch | null> {
   return readJson<Batch>(`batches/${id}.json`);
 }
 
-/** The batch with each product's latest successful rewrite (if any) in place of its draft. */
+/**
+ * The batch in review order (weakest current descriptions first), with each product's latest
+ * successful rewrite (if any) in place of its draft.
+ */
 export async function getBatch(id: string): Promise<Batch | null> {
   const batch = await readBatch(id);
   if (!batch) return null;
   const revisions = await getRevisions(id);
-  if (!Object.keys(revisions).length) return batch;
-  return { ...batch, products: batch.products.map((p) => withRevision(p, revisions[p.sku])) };
+  return { ...batch, products: reviewOrder(batch.products).map((p) => withRevision(p, revisions[p.sku])) };
 }
 
 function withRevision(product: BatchProduct, revision: Revision | undefined): BatchProduct {
